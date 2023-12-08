@@ -1,11 +1,11 @@
-import { Button, Dropdown, MenuProps, Modal, Space, Switch, Table, TablePaginationConfig, Tag, message } from "antd";
+import { CarryOutOutlined, CopyOutlined, DeleteOutlined, DownloadOutlined, PlayCircleOutlined, ReadOutlined, ReloadOutlined } from "@ant-design/icons";
+import { Button, Dropdown, Flex, Modal, Space, Switch, Table, TablePaginationConfig, Tag, message } from "antd";
 import ButtonGroup from "antd/es/button/button-group";
 import { ColumnsType, FilterValue } from "antd/es/table/interface";
 import { useEffect, useState } from "react";
-import { Recording, RequestType } from "../model/recording";
+import { Recording } from "../model/recording";
 import { formatDateWithSecond } from "../utility/date";
 import TabDetailLayout from "./TabDetailLayout";
-import { CarryOutOutlined, CopyOutlined, DeleteOutlined, DownloadOutlined, PlayCircleOutlined, ReadOutlined } from "@ant-design/icons";
 
 const baseUrl = "http://localhost:3000";
 
@@ -32,6 +32,8 @@ const RecordingLayout = () => {
 
   const [tableHeight, setTableHeight] = useState(540);
 
+  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
+
   // TABLE PARAM CHANGES
   const handleTableChange = (pagination: TablePaginationConfig) => {
     //
@@ -44,10 +46,7 @@ const RecordingLayout = () => {
   };
 
   const [tableParams, setTableParams] = useState<TableParams>({
-    pagination: {
-      current: 1,
-      pageSize: 12,
-    },
+    pagination: { current: 1, pageSize: 12 },
   });
 
   const reload = async () => {
@@ -66,6 +65,7 @@ const RecordingLayout = () => {
           total: result.count,
         },
       });
+      setRecordingStatus(result.enabled);
 
       //
     } catch (err) {
@@ -97,6 +97,7 @@ const RecordingLayout = () => {
   const rowSelection = {
     onChange: (selectedRowKeys: React.Key[], selectedRows: Recording[]) => {
       console.log(`selectedRowKeys: ${selectedRowKeys}`, "selectedRows: ", selectedRows);
+      setSelectedRowKeys(selectedRowKeys.map((row) => row.toString()));
     },
   };
 
@@ -173,7 +174,7 @@ const RecordingLayout = () => {
           </ButtonGroup>
         </>
       ),
-      // width: 100,
+      width: 140,
       // fixed: "left",
     },
     {
@@ -181,7 +182,7 @@ const RecordingLayout = () => {
       dataIndex: "id",
       key: "id",
       render: (text) => <pre style={{ margin: "auto 0px" }}>{text}</pre>,
-      // width: 160,
+      width: 150,
       // fixed: "left",
     },
     {
@@ -190,34 +191,40 @@ const RecordingLayout = () => {
       key: "requestType",
       render: (text) => <Tag color={text === "query" ? "blue" : "red"}>{text}</Tag>,
       // fixed: "left",
+      width: 100,
     },
     {
       title: "FuncName",
       dataIndex: "funcName",
       key: "funcName",
+      width: 220,
       // fixed: "left",
     },
     {
       title: "Description",
       dataIndex: "description",
       key: "description",
+      width: 220,
     },
     {
       title: "Error Message",
       dataIndex: "error",
       key: "error",
       ellipsis: true,
+      width: 220,
     },
     {
       title: "Date",
       dataIndex: "date",
       key: "date",
       render: (a: Date) => <>{formatDateWithSecond(a)}</>,
+      width: 150,
     },
     {
       title: "Duration",
       dataIndex: "duration",
       key: "duration",
+      width: 80,
     },
   ];
 
@@ -247,6 +254,13 @@ const RecordingLayout = () => {
     reload();
   }, [JSON.stringify(tableParams)]);
 
+  // navigator.clipboard.writeText(copyText.value);
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(selectedRowKeys.join("\n"));
+    messageApi.info(`copy ${selectedRowKeys} to clipboard`);
+  };
+
   return (
     <>
       {contextHolder}
@@ -266,21 +280,30 @@ const RecordingLayout = () => {
         direction="vertical"
         style={{ margin: "10px 20px 20px 20px" }}
       >
-        <Space>
-          <Button
-            onClick={reload}
-            style={{ marginRight: "30px" }}
-          >
-            Reload
-          </Button>
-          Recording Status
+        <Flex justify="space-between">
+          <Space>
+            <Button
+              onClick={reload}
+              // style={{ marginRight: "20px" }}
+            >
+              <ReloadOutlined />
+              Reload
+            </Button>
+            <Button
+              disabled={selectedRowKeys.length === 0}
+              onClick={copyToClipboard}
+              // style={{ marginRight: "30px" }}
+            >
+              <CopyOutlined /> Copy All Checked Rows
+            </Button>
+          </Space>
           <Switch
             checked={recordingStatus}
             onChange={onRecordingStatusSwitchChanged}
-            checkedChildren={"enabled"}
-            unCheckedChildren={"disabled"}
+            checkedChildren={"recording enabled"}
+            unCheckedChildren={"recording disabled"}
           />
-        </Space>
+        </Flex>
 
         <Table
           size="small"
